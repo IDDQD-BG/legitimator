@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,6 +32,9 @@
         button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .btn-primary { background-color: var(--primary); color: black; width: 100%; }
         .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-vote { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); width: 100%; margin-top: 10px; }
+        .btn-vote:hover:not(:disabled) { background-color: var(--primary); color: black; }
+        .btn-voted { background-color: #1b1e3d; color: var(--success); border: 2px solid var(--success); width: 100%; margin-top: 10px; opacity: 0.8; cursor: default; }
         .alert { padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em; display: none; }
         .alert.show { display: block; }
         .alert-success { background: rgba(34,213,94,0.08); border: 1px solid var(--success); color: var(--success); }
@@ -82,7 +86,7 @@
                 </div>
                 <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Активирай Профила</button>
             </div>
-            <div id="profileAlert" class="alert alert-success">✓ Профилът е заложен локално в браузъра! Можеш да преминеш към стъпка 2.</div>
+            <div id="profileAlert" class="alert alert-success">✓ Профилът е заложен локално в браузъра! Можеш да преминеш към стъпка 2 или 3.</div>
         </div>
 
         <!-- ТАБ 2: ИЗДИГАНЕ НА КАНДИДАТ -->
@@ -130,7 +134,7 @@
             <div id="leaderboardContainer" class="leaderboard-container" style="display: none;"></div>
             <div id="emptyLeaderboard" style="display: none; text-align: center; padding: 40px; color: var(--muted);">
                 <h3>Колизеумът е празен</h3>
-                <p>Няма активни кандидати с над 0 гласа. Бъди първият, който ще издигне лидер от Таб 2!</p>
+                <p>Няма активни кандидати. Бъди първият, който ще издигне лидер от Таб 2!</p>
             </div>
         </div>
     </div>
@@ -299,6 +303,32 @@
             }, 1500);
         });
 
+        // НОВА ФУНКЦИЯ ЗА ГЛАСУВАНЕ
+        async function delegateTrust(targetPubkey, targetName) {
+            if (!localProfileActive) {
+                alert('Трябва да активирате Гражданския си профил от ТАБ 1, преди да гласувате!');
+                switchTab('profile');
+                return;
+            }
+
+            if (confirm(`Ще делегирате вашия глас на:\n\n${targetName}\n\nАко вече сте гласували за друг, старият ви вот ще бъде преместен тук. Съгласни ли сте?`)) {
+                const trustEvent = {
+                    kind: KIND_TRUST, 
+                    pubkey: userKeypair.publicKey, 
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: [['p', targetPubkey]], 
+                    content: "Делегиране на доверие от Колизеума"
+                };
+                
+                trustEvent.sig = await signEvent(trustEvent, userKeypair.secretKey);
+                broadcast(trustEvent);
+                
+                // Оптимистично обновяване на екрана веднага
+                liveTrustMap.set(userKeypair.publicKey, targetPubkey);
+                recalculateAndRender();
+            }
+        }
+
         function recalculateAndRender() {
             // Нулиране на вотовете
             virtualProfiles.forEach(p => p.votes = 0);
@@ -310,9 +340,8 @@
                 }
             });
 
-            // Кастрене по твоето правило: показваме само профили с гласове > 0
+            // Премахнато е скриването на профили с 0 гласа - показваме всички
             const list = Array.from(virtualProfiles.values())
-                .filter(p => p.votes > 0)
                 .sort((a, b) => b.votes - a.votes);
 
             const container = document.getElementById('leaderboardContainer');
@@ -327,10 +356,18 @@
             empty.style.display = 'none';
             container.innerHTML = list.map((p, idx) => {
                 const rank = idx + 1;
+                
+                // Проверка дали ТИ си гласувал за този конкретен профил
+                const myPubkey = userKeypair ? userKeypair.publicKey : null;
+                const hasVoted = liveTrustMap.get(myPubkey) === p.pubkey;
+                
+                const btnClass = hasVoted ? 'btn-voted' : 'btn-vote';
+                const btnText = hasVoted ? '✅ ДОВЕРИЕТО Е ДАДЕНО' : '🤝 ДЕЛЕГИРАЙ ДОВЕРИЕ';
+
                 return `
                     <div class="profile-card">
                         <div class="profile-header">
-                            <div class="rank-badge ${rank === 1 ? 'gold' : ''}">${rank}</div>
+                            <div class="rank-badge ${p.votes > 0 && rank === 1 ? 'gold' : ''}">${rank}</div>
                             <img src="${p.image}" class="profile-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect fill=%22%23222%22 width=%2250%22 height=%2250%22/%3E%3C/svg%3E'">
                             <div class="profile-info">
                                 <div class="profile-name">${escapeHtml(p.name)}</div>
@@ -345,6 +382,13 @@
                             <strong style="color:var(--primary); font-size:0.8em; display:block; margin-bottom:2px;">📜 ГРАЖДАНСКА ОБОСНОВКА:</strong>
                             ${escapeHtml(p.rationale)}
                         </div>
+                        
+                        <!-- БУТОН ЗА ДЕЛЕГИРАНЕ НА ДОВЕРИЕ -->
+                        <button class="${btnClass}" 
+                                onclick="delegateTrust('${p.pubkey}', '${escapeHtml(p.name).replace(/'/g, "\\'")}')"
+                                ${hasVoted ? 'disabled' : ''}>
+                            ${btnText}
+                        </button>
                     </div>
                 `;
             }).join('');
