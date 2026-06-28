@@ -3,93 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Political Legitimator – Standalone Coliseum</title>
+    <title>Political Legitimator – Standalone Coliseum V3</title>
+    <script src="https://unpkg.com/nostr-tools@1.13.1/lib/nostr.bundle.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary: #0a7ea4; --background: #05050a; --surface: #0b0c16;
-            --foreground: #ecedee; --muted: #9ba1a6; --border: #1b1e3d;
-            --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
+            --primary: #00e5ff; /* Neon Cyan */
+            --background: #020205; 
+            --surface: #0a0b16;
+            --foreground: #ecedee; 
+            --muted: #6b7280; 
+            --border: #141836;
+            --success: #39ff14; /* Neon Green */
+            --error: #ff3366; /* Neon Pink/Red */
+            --warning: #f59e0b;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--background); color: var(--foreground); padding: 20px; line-height: 1.6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--background); color: var(--foreground); line-height: 1.6; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
-        header h1 { font-size: 2.2em; color: var(--primary); letter-spacing: 1px; }
+        header h1 { font-size: 2.2em; color: var(--primary); letter-spacing: 1px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
         header p { color: var(--muted); font-size: 1em; margin-top: 5px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid var(--border); }
+        .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid var(--border); }
         .tab-button { padding: 12px 24px; border: none; background: none; cursor: pointer; font-size: 1em; color: var(--muted); border-bottom: 3px solid transparent; transition: 0.3s; font-weight: bold; }
-        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); text-shadow: 0 0 8px rgba(0, 229, 255, 0.3); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 25px; }
-        .form-section h2 { margin-bottom: 15px; font-size: 1.3em; color: #fff; }
+        
+        .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .form-section h2 { margin-bottom: 15px; font-size: 1.3em; color: #fff; border-left: 4px solid var(--primary); padding-left: 10px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--muted); text-transform: uppercase; }
-        input[type="text"], input[type="url"], textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background-color: #000; color: #fff; outline: none; font-family: inherit; }
-        input[type="text"]:focus, input[type="url"]:focus, textarea:focus { border-color: var(--primary); }
+        input[type="text"], input[type="url"], input[type="password"], textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.95em; background-color: #000; color: #fff; outline: none; transition: 0.3s; }
+        input[type="text"]:focus, input[type="url"]:focus, input[type="password"]:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(0, 229, 255, 0.2); }
         textarea { min-height: 100px; }
-        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary { background-color: var(--primary); color: #000; width: 100%; }
+        .btn-primary:hover { box-shadow: 0 0 15px var(--primary); }
+        .btn-secondary { background-color: transparent; border: 1px solid var(--muted); color: var(--muted); width: 100%; margin-top: 10px; }
+        .btn-secondary:hover { border-color: #fff; color: #fff; }
+        .btn-vote { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); width: 100%; margin-top: 10px; }
+        .btn-vote:hover:not(:disabled) { background-color: var(--primary); color: black; box-shadow: 0 0 10px var(--primary); }
+        .btn-revoke { background-color: transparent; border: 2px solid var(--error); color: var(--error); width: 100%; margin-top: 10px; }
+        .btn-revoke:hover { background-color: var(--error); color: black; box-shadow: 0 0 10px var(--error); }
+        
         .alert { padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em; display: none; }
         .alert.show { display: block; }
-        .alert-success { background: rgba(34,213,94,0.08); border: 1px solid var(--success); color: var(--success); }
+        .alert-success { background: rgba(57, 255, 20, 0.08); border: 1px solid var(--success); color: var(--success); }
         .alert-warning { background: rgba(245,158,11,0.08); border: 1px solid var(--warning); color: var(--warning); }
+        .alert-error { background: rgba(255,51,102,0.08); border: 1px solid var(--error); color: var(--error); }
+        
         .leaderboard-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-        .profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .profile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; }
+        .profile-card:hover { border-color: var(--primary); transform: translateY(-3px); }
         .profile-header { display: flex; align-items: center; gap: 12px; }
-        .rank-badge { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #222; color: #fff; }
-        .rank-badge.gold { background: #ffd700; color: #000; }
-        .profile-avatar { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #222; }
+        .rank-badge { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #111; color: #fff; border: 1px solid #333; }
+        .rank-badge.gold { background: #ffd700; color: #000; border: none; box-shadow: 0 0 10px #ffd700; }
+        .profile-avatar { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #222; border: 1px solid var(--border); }
         .profile-info { flex: 1; min-width: 0; }
-        .profile-name { font-size: 1.1em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .profile-name { font-size: 1.1em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
         .trust-count { text-align: right; }
-        .trust-count-value { font-size: 1.6em; font-weight: 900; color: var(--primary); }
-        .rationale-box { background: #000; padding: 10px; border-radius: 4px; font-size: 0.85em; color: #aaa; border: 1px solid #111; word-wrap: break-word; margin-top: 5px; }
+        .trust-count-value { font-size: 1.6em; font-weight: 900; color: var(--primary); text-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
+        .rationale-box { background: #000; padding: 10px; border-radius: 4px; font-size: 0.85em; color: #ccc; border: 1px solid #1a1a2e; }
+        
+        .key-box { background: #000; border: 1px dashed var(--muted); padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.8em; word-break: break-all; margin-bottom: 10px; color: var(--muted); }
+        
         .loading-wheel { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏛️ POLITICAL COLISEUM</h1>
-            <p>Децентрализирана Избирателна Арена върху Отворения Ностър Протокол</p>
+            <h1>🏛️ POLITICAL COLISEUM (NEON V3)</h1>
+            <p>Платформа за Политическа Легитимация през Отворения Ностър Протокол</p>
         </header>
 
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('profile')">1. Моят Граждански Профил</button>
-            <button class="tab-button" onclick="switchTab('launch')">2. Издигни Кандидат</button>
-            <button class="tab-button" onclick="switchTab('leaderboard')">3. Класиране на Живо</button>
+            <button class="tab-button" onclick="switchTab('launch')">2. Издигни Кандидат в Колизеума</button>
+            <button class="tab-button" onclick="switchTab('leaderboard')">3. Виртуален Лидерборд на Живо</button>
         </div>
 
         <div id="profile" class="tab-content active">
+            
+            <div class="form-section" id="loginSection">
+                <h2>Вече имаш профил? Влез с ключа си</h2>
+                <div class="form-group">
+                    <label>Nostr Частен Ключ (започва с 'nsec' или Hex)</label>
+                    <input type="password" id="importKeyInput" placeholder="nsec1...">
+                </div>
+                <button class="btn-secondary" onclick="importExistingKey()">Влез в системата</button>
+                <div id="loginErrorAlert" class="alert alert-error" style="margin-top: 10px;"></div>
+            </div>
+
             <div class="form-section">
-                <h2>Идентификация на Твоя Профил (Kind:0)</h2>
-                <p style="color: var(--muted); font-size:0.85em; margin-bottom:15px;">Попълни репутационната си котва, за да прескочиш Анти-Спам преградата на Колизеума.</p>
+                <h2>Идентификация на Личния Граждански Профил (Kind:0)</h2>
+                <p style="color: var(--muted); font-size:0.85em; margin-bottom:15px;">Това е твоята визитка в мрежата. Попълни я, за да отключиш Анти-Спам портата.</p>
                 <div class="form-group">
                     <label>Твоето Име / Псевдоним</label>
                     <input type="text" id="myProfileName" placeholder="Напр. Гражданин Станков">
                 </div>
                 <div class="form-group">
-                    <label>URL Снимка (Автоматично заложено безплатно роботче)</label>
+                    <label>URL Снимка</label>
                     <input type="url" id="myProfilePic" value="https://api.dicebear.com/7.x/bottts/svg?seed=Satoshi">
                 </div>
                 <div class="form-group">
-                    <label>Гражданско Кредо / Био</label>
-                    <input type="text" id="myProfileAbout" placeholder="Пазител на триъгълната вселенска справедливост">
+                    <label>Гражданско кредо / Био</label>
+                    <input type="text" id="myProfileAbout" placeholder="Напр. Пазител на свободното слово">
                 </div>
-                <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Отключи Арената</button>
+                <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Активирай Профила</button>
             </div>
-            <div id="profileAlert" class="alert alert-success">✓ Твоят криптографски ключ е активиран локално! Премини към Таб 2.</div>
+            
+            <div id="profileAlert" class="alert alert-success">✓ Профилът е заложен локално в браузъра!</div>
+            
+            <div class="form-section" id="keysSection" style="display: none; border-color: var(--warning);">
+                <h2 style="border-left-color: var(--warning);">Криптографска Идентичност (ЗАПАЗИ ГИ!)</h2>
+                <p style="color: var(--muted); font-size:0.85em; margin-bottom:10px;">Това са твоите ключове за достъп. <strong>Не споделяй частния ключ с никого!</strong> Запази го на сигурно място, за да можеш да влизаш от други устройства.</p>
+                <label>Публичен Ключ (npub) - За споделяне:</label>
+                <div class="key-box" id="displayNpub"></div>
+                <label>Частен Ключ (nsec) - ПАЗИ В ТАЙНА:</label>
+                <div class="key-box" id="displayNsec" style="color: var(--error);"></div>
+            </div>
         </div>
 
         <div id="launch" class="tab-content">
             <div class="form-section">
-                <h2>Пусни Нов Боец в Колизеума</h2>
+                <h2>Пусни Виртуален Кандидат на Арената</h2>
                 <div class="alert alert-warning show" id="metadataAlert">
-                    <strong>Анти-Спам Спирачка:</strong> Трябва първо да попълниш и активираш личния си профил в Таб 1, за да се верифицира твоят Биткойн-тип подпис.
+                    <strong>Анти-Спам Преграда:</strong> Трябва първо да попълниш и активираш Гражданския си профил в Таб 1.
                 </div>
 
                 <form id="virtualProfileForm" style="display: none;">
@@ -98,19 +140,19 @@
                         <input type="text" id="candidateName" placeholder="Напр. Адвокат Петър Петров" required>
                     </div>
                     <div class="form-group">
-                        <label>URL Снимка на кандидата *</label>
-                        <input type="url" id="candidateImage" value="https://api.dicebear.com/7.x/initials/svg?seed=Candidate" required>
+                        <label>Линк към негова снимка *</label>
+                        <input type="url" id="candidateImage" placeholder="https://..." required>
                     </div>
                     <div class="form-group">
-                        <label>Гражданска Аргументация / Обосновка (Permanent Content) *</label>
-                        <textarea id="candidateRationale" placeholder="Опиши детайлно защо вярваш на този човек и защо му прехвърляш уличната си подкрепа..." required></textarea>
+                        <label>Аргументация / Обосновка (Permanent Content) *</label>
+                        <textarea id="candidateRationale" placeholder="Опиши детайлно защо считаш този човек за достоен лидер..." required></textarea>
                     </div>
-                    <button type="submit" class="btn-primary" id="submitBtn">Изстреляй в Колизеума + Дай Глас</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">Издигни Кандидат + Делегирай Доверие</button>
                 </form>
 
                 <div id="loadingStatus" style="display: none; text-align: center; margin-top: 15px;">
                     <div class="loading-wheel"></div>
-                    <p style="color:var(--primary); margin-top:5px;">Генериране на Schnorr подпис и излъчване към 5-те глобални релея...</p>
+                    <p style="color:var(--primary); margin-top:5px;">Изстрелване на Вълната към Nostr релеите...</p>
                 </div>
             </div>
             <div id="successAlert" class="alert alert-success"></div>
@@ -118,66 +160,157 @@
 
         <div id="leaderboard" class="tab-content">
             <div style="margin-bottom: 20px;">
-                <h2>Текущо Класиране на Виртуалните Кандидати</h2>
-                <p style="color: var(--muted); font-size: 0.85em;">Показват се само живи профили с вотове над 0. Всяко изтегляне на доверие ги трие от екрана.</p>
+                <h2>Текущо класиране на Виртуалните Делегати</h2>
+                <p style="color: var(--muted); font-size: 0.85em;">Свободно пренареждане на силите в реално време на база акумулираните живи гласове.</p>
             </div>
             <div id="leaderboardLoading" style="text-align: center; padding: 20px;">
                 <div class="loading-wheel"></div>
-                <p style="margin-top: 10px; color: var(--muted);">Слушане на ефира за автентични гласове...</p>
+                <p style="margin-top: 10px; color: var(--muted);">Слушане на релейния ефир...</p>
             </div>
             <div id="leaderboardContainer" class="leaderboard-container" style="display: none;"></div>
             <div id="emptyLeaderboard" style="display: none; text-align: center; padding: 40px; color: var(--muted);">
-                <h3>Арената е празна</h3>
-                <p>Няма активни кандидати с над 0 гласа в релеите. Отиди в Таб 2 и издигни първия!</p>
+                <h3>Колизеумът е празен</h3>
+                <p>Няма активни кандидати. Бъди първият, който ще издигне лидер от Таб 2!</p>
             </div>
         </div>
     </div>
 
     <script>
-        const RELAYS = ['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol', 'wss://relay.snort.social', 'wss://nostr.wine'];
+        // Инициализация на NostrTools
+        const nt = window.NostrTools;
+
+        const RELAYS = ['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol', 'wss://relay.snort.social'];
         const KIND_METADATA = 0;
         const KIND_TRUST = 21000;
         const KIND_VIRTUAL_PROFILE = 21001;
 
-        let myPrivKey = null;
-        let myPubKey = null;
+        let userKeypair = null;
         let localProfileActive = false;
         
-        let virtualProfiles = new Map(); // key: event.id (Уникалното ЕГН на кандидата) -> data
-        let liveTrustMap = new Map();    // key: voter_pubkey -> target_candidate_event_id
+        let virtualProfiles = new Map(); // key: pubkey -> profile data
+        let liveTrustMap = new Map();    // key: voter_pubkey -> { target, time }
         let relayConnections = new Map();
 
-        function initializeKeypair() {
-            let stored = localStorage.getItem('legit_sk');
-            if (!stored) {
-                myPrivKey = NostrTools.generatePrivateKey();
-                localStorage.setItem('legit_sk', myPrivKey);
-            } else {
-                myPrivKey = stored;
-            }
-            myPubKey = NostrTools.getPublicKey(myPrivKey);
-            console.log('Твоят сигурен Nostr PubKey за браузъра:', myPubKey);
+        // Помощни функции за NIP-19 (npub/nsec)
+        function hexToBytes(hex) {
+            let bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            return bytes;
+        }
+        function encodeBech32(prefix, hex) {
+            try { return nt.nip19.encode(prefix, hex); } catch (e) { return hex; } // Fallback to hex if nip19 fails
+        }
+
+        function displayKeys() {
+            if (!userKeypair) return;
+            document.getElementById('keysSection').style.display = 'block';
             
-            if (localStorage.getItem('legit_profile_set') === '1') {
-                localProfileActive = true;
-                document.getElementById('virtualProfileForm').style.display = 'block';
-                document.getElementById('metadataAlert').style.display = 'none';
-                document.getElementById('profileAlert').classList.add('show');
+            let npub = userKeypair.publicKey;
+            let nsec = userKeypair.secretKey;
+            
+            try {
+                npub = nt.nip19.npubEncode(userKeypair.publicKey);
+                nsec = nt.nip19.nsecEncode(hexToBytes(userKeypair.secretKey));
+            } catch(e) {} // Ако библиотеката е стара, показваме Hex
+            
+            document.getElementById('displayNpub').innerText = npub;
+            document.getElementById('displayNsec').innerText = nsec;
+        }
+
+        function initializeKeypair() {
+            let stored = localStorage.getItem('legit_keypair_schnorr_v2');
+            if (!stored) {
+                let sk = nt.generatePrivateKey(); 
+                let pk = nt.getPublicKey(sk);     
+                userKeypair = { secretKey: sk, publicKey: pk };
+                localStorage.setItem('legit_keypair_schnorr_v2', JSON.stringify(userKeypair));
+            } else {
+                userKeypair = JSON.parse(stored);
             }
+            
+            displayKeys();
+
+            let metaCheck = localStorage.getItem('legit_profile_set_v2');
+            if (metaCheck === '1') {
+                unlockApp();
+            }
+        }
+
+        function unlockApp() {
+            localProfileActive = true;
+            document.getElementById('virtualProfileForm').style.display = 'block';
+            document.getElementById('metadataAlert').style.display = 'none';
+            document.getElementById('profileAlert').classList.add('show');
+            document.getElementById('loginSection').style.display = 'none';
+        }
+
+        function importExistingKey() {
+            const input = document.getElementById('importKeyInput').value.trim();
+            const errAlert = document.getElementById('loginErrorAlert');
+            errAlert.classList.remove('show');
+
+            if (!input) {
+                errAlert.innerText = 'Моля, въведете ключ.';
+                errAlert.classList.add('show');
+                return;
+            }
+
+            let hexPrivateKey = "";
+            try {
+                if (input.startsWith('nsec')) {
+                    let decoded = nt.nip19.decode(input);
+                    if (decoded.type === 'nsec') {
+                        // Convert Uint8Array to Hex String
+                        hexPrivateKey = Array.from(decoded.data).map(b => b.toString(16).padStart(2, '0')).join('');
+                    } else {
+                        throw new Error("Невалиден nsec ключ");
+                    }
+                } else {
+                    // Assume it's already Hex
+                    if (input.length !== 64) throw new Error("Hex ключът трябва да е 64 символа");
+                    hexPrivateKey = input;
+                }
+
+                let pubKey = nt.getPublicKey(hexPrivateKey);
+                userKeypair = { secretKey: hexPrivateKey, publicKey: pubKey };
+                localStorage.setItem('legit_keypair_schnorr_v2', JSON.stringify(userKeypair));
+                
+                displayKeys();
+                
+                // Проверяваме дали този ключ вече има профил в мрежата
+                localStorage.setItem('legit_profile_set_v2', '1');
+                unlockApp();
+                switchTab('leaderboard');
+                
+            } catch (error) {
+                errAlert.innerText = 'Невалиден ключ: ' + error.message;
+                errAlert.classList.add('show');
+            }
+        }
+
+        function createAndSignEvent(kind, tags, content) {
+            let event = {
+                kind: kind,
+                pubkey: userKeypair.publicKey,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: tags,
+                content: content
+            };
+            event.id = nt.getEventHash(event); 
+            event.sig = nt.signEvent(event, userKeypair.secretKey); 
+            return event;
         }
 
         function connectToRelays() {
             RELAYS.forEach(url => {
                 if (!relayConnections.has(url)) {
-                    try {
-                        const ws = new WebSocket(url);
-                        ws.onopen = () => {
-                            relayConnections.set(url, ws);
-                            ws.send(JSON.stringify(['REQ', 'sub_coliseum', { kinds: [KIND_TRUST, KIND_VIRTUAL_PROFILE] }]));
-                        };
-                        ws.onmessage = (e) => handleRelayMessage(JSON.parse(e.data));
-                        ws.onclose = () => { relayConnections.delete(url); setTimeout(connectToRelays, 5000); };
-                    } catch(err) { console.error("Релейна грешка:", err); }
+                    const ws = new WebSocket(url);
+                    ws.onopen = () => {
+                        relayConnections.set(url, ws);
+                        ws.send(JSON.stringify(['REQ', 'sub_coliseum', { kinds: [KIND_TRUST, KIND_VIRTUAL_PROFILE], limit: 1000 }]));
+                    };
+                    ws.onmessage = (e) => handleRelayMessage(JSON.parse(e.data));
+                    ws.onclose = () => { relayConnections.delete(url); setTimeout(connectToRelays, 5000); };
                 }
             });
         }
@@ -188,17 +321,23 @@
                 if (ev.kind === KIND_VIRTUAL_PROFILE) {
                     const name = ev.tags.find(t => t[0] === 'name')?.[1] || 'Анонимен Лидер';
                     const img = ev.tags.find(t => t[0] === 'image')?.[1] || '';
-                    // Тук Котвата е ev.id - уникалното събитие на раждането му!
-                    virtualProfiles.set(ev.id, {
-                        id: ev.id, pubkey: ev.pubkey, name: name, image: img, rationale: ev.content, votes: 0
-                    });
+                    if (!virtualProfiles.has(ev.pubkey)) {
+                        virtualProfiles.set(ev.pubkey, {
+                            pubkey: ev.pubkey, name: name, image: img, rationale: ev.content, votes: 0
+                        });
+                    }
                 } else if (ev.kind === KIND_TRUST) {
-                    // Търсим насочен вот към кандидат чрез таг "e" (event) или "p"
-                    const target = ev.tags.find(t => t[0] === 'e' || t[0] === 'p')?.[1];
-                    if (target) {
-                        liveTrustMap.set(ev.pubkey, target);
-                    } else {
-                        liveTrustMap.delete(ev.pubkey);
+                    // Намираме p-tag, ако има такъв. Ако няма, значи е ВЕТО (оттегляне)
+                    const target = ev.tags.find(t => t[0] === 'p')?.[1];
+                    const currentTrust = liveTrustMap.get(ev.pubkey);
+                    
+                    if (!currentTrust || ev.created_at > currentTrust.time) {
+                        if (target) {
+                            liveTrustMap.set(ev.pubkey, { target: target, time: ev.created_at });
+                        } else {
+                            // Empty Trust Event = ВЕТО / Оттегляне на гласа
+                            liveTrustMap.set(ev.pubkey, { target: null, time: ev.created_at });
+                        }
                     }
                 }
                 recalculateAndRender();
@@ -206,29 +345,22 @@
         }
 
         function broadcast(event) {
-            relayConnections.forEach(ws => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(['EVENT', event])); });
+            relayConnections.forEach(ws => { 
+                if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(['EVENT', event])); 
+            });
         }
 
         function saveAndPublishMyMetadata() {
             const name = document.getElementById('myProfileName').value.trim();
             const pic = document.getElementById('myProfilePic').value.trim();
             const about = document.getElementById('myProfileAbout').value.trim();
-            if (!name || !about) { alert('Попълнете задължителните полета!'); return; }
+            if (!name || !about) { alert('Попълнете името и био-то си!'); return; }
 
-            let metadataEvent = {
-                kind: KIND_METADATA, pubkey: myPubKey, created_at: Math.floor(Date.now() / 1000),
-                tags: [], content: JSON.stringify({ name: name, picture: pic, about: about })
-            };
-            
-            metadataEvent.id = NostrTools.getEventHash(metadataEvent);
-            metadataEvent.sig = NostrTools.signEvent(metadataEvent, myPrivKey);
-            
+            const metadataEvent = createAndSignEvent(KIND_METADATA, [], JSON.stringify({ name: name, picture: pic, about: about }));
             broadcast(metadataEvent);
-            localStorage.setItem('legit_profile_set', '1');
-            localProfileActive = true;
-            document.getElementById('virtualProfileForm').style.display = 'block';
-            document.getElementById('metadataAlert').style.display = 'none';
-            document.getElementById('profileAlert').classList.add('show');
+            
+            localStorage.setItem('legit_profile_set_v2', '1');
+            unlockApp();
             switchTab('launch');
         }
 
@@ -243,68 +375,110 @@
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('loadingStatus').style.display = 'block';
 
-            // 1. Раждане на кандидата (Kind: 21001) под твоя криптографски печат
-            let profileEvent = {
-                kind: KIND_VIRTUAL_PROFILE, pubkey: myPubKey, created_at: Math.floor(Date.now()/1000),
-                tags: [['name', name], ['image', img]], content: rationale
+            let virtualSk = nt.generatePrivateKey();
+            let virtualPk = nt.getPublicKey(virtualSk);
+            
+            let correctProfileEvent = {
+                kind: KIND_VIRTUAL_PROFILE,
+                pubkey: virtualPk,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [['name', name], ['image', img], ['creator', userKeypair.publicKey]],
+                content: rationale
             };
-            profileEvent.id = NostrTools.getEventHash(profileEvent);
-            profileEvent.sig = NostrTools.signEvent(profileEvent, myPrivKey);
-            broadcast(profileEvent);
+            correctProfileEvent.id = nt.getEventHash(correctProfileEvent);
+            correctProfileEvent.sig = nt.signEvent(correctProfileEvent, virtualSk);
+            broadcast(correctProfileEvent);
 
-            // 2. АВТОМАТИЧНО ДЕЛЕГИРАНЕ: Твоето 1 доверие моментално се заключва към неговото Event ID
-            let trustEvent = {
-                kind: KIND_TRUST, pubkey: myPubKey, created_at: Math.floor(Date.now()/1000) + 1,
-                tags: [['e', profileEvent.id]], content: "Улична инициация на лидер"
-            };
-            trustEvent.id = NostrTools.getEventHash(trustEvent);
-            trustEvent.sig = NostrTools.signEvent(trustEvent, myPrivKey);
+            // Автоматично гласуване за създадения профил
+            const trustEvent = createAndSignEvent(KIND_TRUST, [['p', virtualPk]], "Първоначално улично овластяване");
             broadcast(trustEvent);
+            liveTrustMap.set(userKeypair.publicKey, { target: virtualPk, time: trustEvent.created_at });
 
             setTimeout(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('virtualProfileForm').reset();
                 const sAlert = document.getElementById('successAlert');
-                if (sAlert) {
-                    sAlert.innerText = `✓ Желязно подписано! Кандидатът "${name}" влезе в Колизеума с Вашия автоматичен глас!`;
-                    sAlert.classList.add('show');
-                }
+                sAlert.innerText = `✓ Кандидатът "${name}" е успешно пуснат в Колизеума!`;
+                sAlert.classList.add('show');
                 switchTab('leaderboard');
-            }, 1500);
+            }, 2000);
         });
 
+        // Функция за ДЕЛЕГИРАНЕ
+        function delegateTrust(targetPubkey, targetName) {
+            if (!localProfileActive) {
+                alert('Трябва да активирате Гражданския си профил от ТАБ 1, преди да гласувате!');
+                switchTab('profile');
+                return;
+            }
+
+            if (confirm(`Ще делегирате вашия глас на:\n\n${targetName}\n\nАко вече сте гласували за друг, старият ви вот ще бъде преместен тук. Съгласни ли сте?`)) {
+                const trustEvent = createAndSignEvent(KIND_TRUST, [['p', targetPubkey]], "Делегиране на доверие от Колизеума");
+                broadcast(trustEvent);
+                
+                liveTrustMap.set(userKeypair.publicKey, { target: targetPubkey, time: trustEvent.created_at });
+                recalculateAndRender();
+            }
+        }
+
+        // Функция за ОТТЕГЛЯНЕ НА ДОВЕРИЕ (ВЕТО)
+        function revokeTrust(targetName) {
+            if (confirm(`Сигурни ли сте, че искате да оттеглите доверието си от:\n\n${targetName}?\n\nГласът ви ще бъде нулиран.`)) {
+                // Празно Trust събитие (без p tag) означава премахване на гласа
+                const revokeEvent = createAndSignEvent(KIND_TRUST, [], "Оттегляне на доверие (ВЕТО)");
+                broadcast(revokeEvent);
+                
+                liveTrustMap.set(userKeypair.publicKey, { target: null, time: revokeEvent.created_at });
+                recalculateAndRender();
+            }
+        }
+
         function recalculateAndRender() {
-            // Нулиране на вотовете преди преброяване
             virtualProfiles.forEach(p => p.votes = 0);
             
-            // Сумиране на живия релеен поток
-            liveTrustMap.forEach((targetCandidateId) => { 
-                if (virtualProfiles.has(targetCandidateId)) {
-                    virtualProfiles.get(targetCandidateId).votes += 1; 
+            // Сумираме само активните гласове (където target не е null)
+            liveTrustMap.forEach((voteData) => {
+                if (voteData.target && virtualProfiles.has(voteData.target)) {
+                    virtualProfiles.get(voteData.target).votes += 1;
                 }
             });
 
-            // Твоето златно правило: показват се само профили с гласове > 0
-            const list = Array.from(virtualProfiles.values()).filter(p => p.votes > 0).sort((a, b) => b.votes - a.votes);
+            const list = Array.from(virtualProfiles.values())
+                .sort((a, b) => b.votes - a.votes);
+
             const container = document.getElementById('leaderboardContainer');
             const loading = document.getElementById('leaderboardLoading');
             const empty = document.getElementById('emptyLeaderboard');
 
             loading.style.display = 'none';
-            if (list.length === 0) { container.style.display = 'none'; empty.style.display = 'block'; return; }
+            if (list.length === 0) {
+                container.style.display = 'none'; empty.style.display = 'block'; return;
+            }
 
             empty.style.display = 'none';
             container.innerHTML = list.map((p, idx) => {
                 const rank = idx + 1;
+                
+                const myPubkey = userKeypair ? userKeypair.publicKey : null;
+                const myVoteData = liveTrustMap.get(myPubkey);
+                const hasVotedForThis = myVoteData && myVoteData.target === p.pubkey;
+                
+                let buttonHTML = '';
+                if (hasVotedForThis) {
+                    buttonHTML = `<button class="btn-revoke" onclick="revokeTrust('${escapeHtml(p.name).replace(/'/g, "\\'")}')">❌ ОТТЕГЛИ ДОВЕРИЕТО</button>`;
+                } else {
+                    buttonHTML = `<button class="btn-vote" onclick="delegateTrust('${p.pubkey}', '${escapeHtml(p.name).replace(/'/g, "\\'")}')">🤝 ДЕЛЕГИРАЙ ДОВЕРИЕ</button>`;
+                }
+
                 return `
                     <div class="profile-card">
                         <div class="profile-header">
-                            <div class="rank-badge ${rank === 1 ? 'gold' : ''}">${rank}</div>
+                            <div class="rank-badge ${p.votes > 0 && rank === 1 ? 'gold' : ''}">${rank}</div>
                             <img src="${p.image}" class="profile-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect fill=%22%23222%22 width=%2250%22 height=%2250%22/%3E%3C/svg%3E'">
                             <div class="profile-info">
                                 <div class="profile-name">${escapeHtml(p.name)}</div>
-                                <div style="font-size:0.7rem; color:var(--muted); font-family:monospace; max-width:130px; overflow:hidden; text-overflow:ellipsis;">ID: ${p.id.slice(0,14)}...</div>
+                                <div style="font-size:0.75rem; color:var(--muted); font-family:monospace;">ID: ${p.pubkey.slice(0,12)}...</div>
                             </div>
                             <div class="trust-count">
                                 <div class="trust-count-value">${p.votes}</div>
@@ -312,9 +486,11 @@
                             </div>
                         </div>
                         <div class="rationale-box">
-                            <strong style="color:var(--primary); font-size:0.75rem; display:block; margin-bottom:2px;">📜 ГРАЖДАНСКА ОБОСНОВКА:</strong>
+                            <strong style="color:var(--primary); font-size:0.8em; display:block; margin-bottom:2px;">📜 ГРАЖДАНСКА ОБОСНОВКА:</strong>
                             ${escapeHtml(p.rationale)}
                         </div>
+                        
+                        ${buttonHTML}
                     </div>
                 `;
             }).join('');
@@ -327,13 +503,13 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
-            
-            // Защита от извикване без директен клик (програмно превключване)
-            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => b.getAttribute('onclick').includes(name));
-            if(btn) btn.classList.add('active');
+            event.target.classList.add('active');
         }
 
-        window.addEventListener('load', () => { initializeKeypair(); connectToRelays(); });
+        window.addEventListener('load', () => {
+            initializeKeypair();
+            connectToRelays();
+        });
     </script>
 </body>
 </html>
