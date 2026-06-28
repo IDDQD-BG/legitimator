@@ -7,11 +7,11 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary: #f7931a; --background: #05050a; --surface: #0b0c16;
+            --primary: #0a7ea4; --background: #05050a; --surface: #0b0c16;
             --foreground: #ecedee; --muted: #9ba1a6; --border: #1b1e3d;
             --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--background); color: var(--foreground); padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--background); color: var(--foreground); padding: 20px; line-height: 1.6; }
         .container { max-width: 1100px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
         header h1 { font-size: 2.2em; color: var(--primary); letter-spacing: 1px; }
@@ -29,7 +29,7 @@
         input[type="text"]:focus, input[type="url"]:focus, textarea:focus { border-color: var(--primary); }
         textarea { min-height: 100px; }
         button { padding: 12px 24px; border: none; border-radius: 6px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn-primary { background-color: var(--primary); color: black; width: 100%; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
         .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
         .alert { padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9em; display: none; }
         .alert.show { display: block; }
@@ -45,54 +45,51 @@
         .profile-name { font-size: 1.1em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .trust-count { text-align: right; }
         .trust-count-value { font-size: 1.6em; font-weight: 900; color: var(--primary); }
-        .rationale-box { background: #000; padding: 10px; border-radius: 4px; font-size: 0.85em; color: #aaa; border: 1px solid #111; word-wrap: break-word; }
+        .rationale-box { background: #000; padding: 10px; border-radius: 4px; font-size: 0.85em; color: #aaa; border: 1px solid #111; word-wrap: break-word; margin-top: 5px; }
         .loading-wheel { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
-    <!-- ИНТЕГРАЦИЯ НА ОФИЦИАЛНИЯ NOSTR-TOOLS СТАНДАРТ -->
     <script src="https://cdn.jsdelivr.net/npm/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🏛️ POLITICAL COLISEUM</h1>
-            <p>Платформа за Политическа Легитимация през Отворения Ностър Протокол</p>
+            <p>Децентрализирана Избирателна Арена върху Отворения Ностър Протокол</p>
         </header>
 
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('profile')">1. Моят Граждански Профил</button>
-            <button class="tab-button" onclick="switchTab('launch')">2. Издигни Кандидат в Колизеума</button>
-            <button class="tab-button" onclick="switchTab('leaderboard')">3. Виртуален Лидерборд на Живо</button>
+            <button class="tab-button" onclick="switchTab('launch')">2. Издигни Кандидат</button>
+            <button class="tab-button" onclick="switchTab('leaderboard')">3. Класиране на Живо</button>
         </div>
 
-        <!-- ТАБ 1 -->
         <div id="profile" class="tab-content active">
             <div class="form-section">
-                <h2>Идентификация на Личния Граждански Профил (Kind:0)</h2>
-                <p style="color: var(--muted); font-size:0.85em; margin-bottom:15px;">Попълни личните си данни тук, за да подпишеш и отключиш Анти-Спам портата на Колизеума.</p>
+                <h2>Идентификация на Твоя Профил (Kind:0)</h2>
+                <p style="color: var(--muted); font-size:0.85em; margin-bottom:15px;">Попълни репутационната си котва, за да прескочиш Анти-Спам преградата на Колизеума.</p>
                 <div class="form-group">
                     <label>Твоето Име / Псевдоним</label>
                     <input type="text" id="myProfileName" placeholder="Напр. Гражданин Станков">
                 </div>
                 <div class="form-group">
-                    <label>URL Снимка (По подразбиране е твоят безплатен робот-пазител)</label>
+                    <label>URL Снимка (Автоматично заложено безплатно роботче)</label>
                     <input type="url" id="myProfilePic" value="https://api.dicebear.com/7.x/bottts/svg?seed=Satoshi">
                 </div>
                 <div class="form-group">
-                    <label>Гражданско кредо / Био</label>
-                    <input type="text" id="myProfileAbout" placeholder="Напр. Пазител на свободното слово">
+                    <label>Гражданско Кредо / Био</label>
+                    <input type="text" id="myProfileAbout" placeholder="Пазител на триъгълната вселенска справедливост">
                 </div>
-                <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Активирай Профила</button>
+                <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Отключи Арената</button>
             </div>
-            <div id="profileAlert" class="alert alert-success">✓ Профилът е заложен локално в браузъра! Можеш да преминеш към стъпка 2.</div>
+            <div id="profileAlert" class="alert alert-success">✓ Твоят криптографски ключ е активиран локално! Премини към Таб 2.</div>
         </div>
 
-        <!-- ТАБ 2 -->
         <div id="launch" class="tab-content">
             <div class="form-section">
-                <h2>Пусни Виртуален Кандидат на Арената</h2>
+                <h2>Пусни Нов Боец в Колизеума</h2>
                 <div class="alert alert-warning show" id="metadataAlert">
-                    <strong>Анти-Спам Преграда:</strong> Трябва първо да попълниш и активираш Гражданския си профил в Таб 1, за да отключиш правото на издигане.
+                    <strong>Анти-Спам Спирачка:</strong> Трябва първо да попълниш и активираш личния си профил в Таб 1, за да се верифицира твоят Биткойн-тип подпис.
                 </div>
 
                 <form id="virtualProfileForm" style="display: none;">
@@ -101,38 +98,37 @@
                         <input type="text" id="candidateName" placeholder="Напр. Адвокат Петър Петров" required>
                     </div>
                     <div class="form-group">
-                        <label>Линк към негова снимка *</label>
+                        <label>URL Снимка на кандидата *</label>
                         <input type="url" id="candidateImage" value="https://api.dicebear.com/7.x/initials/svg?seed=Candidate" required>
                     </div>
                     <div class="form-group">
-                        <label>Аргументация / Обосновка (Permanent Content) *</label>
-                        <textarea id="candidateRationale" placeholder="Опиши детайлно защо считаш този човек за достоен лидер и защо му гласуваш доверие..." required></textarea>
+                        <label>Гражданска Аргументация / Обосновка (Permanent Content) *</label>
+                        <textarea id="candidateRationale" placeholder="Опиши детайлно защо вярваш на този човек и защо му прехвърляш уличната си подкрепа..." required></textarea>
                     </div>
-                    <button type="submit" class="btn-primary" id="submitBtn">Издигни Кандидат + Делегирай Доверие</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">Изстреляй в Колизеума + Дай Глас</button>
                 </form>
 
                 <div id="loadingStatus" style="display: none; text-align: center; margin-top: 15px;">
                     <div class="loading-wheel"></div>
-                    <p style="color:var(--primary); margin-top:5px;">Извършване на Биткойн-тип Schnorr подписване и изстрелване към релеите...</p>
+                    <p style="color:var(--primary); margin-top:5px;">Генериране на Schnorr подпис и излъчване към 5-те глобални релея...</p>
                 </div>
             </div>
             <div id="successAlert" class="alert alert-success"></div>
         </div>
 
-        <!-- ТАБ 3 -->
         <div id="leaderboard" class="tab-content">
             <div style="margin-bottom: 20px;">
-                <h2>Текущо класиране на Виртуалните Делегати</h2>
-                <p style="color: var(--muted); font-size: 0.85em;">Свободно пренареждане на силите в реално време на база акумулираните живи гласове.</p>
+                <h2>Текущо Класиране на Виртуалните Кандидати</h2>
+                <p style="color: var(--muted); font-size: 0.85em;">Показват се само живи профили с вотове над 0. Всяко изтегляне на доверие ги трие от екрана.</p>
             </div>
             <div id="leaderboardLoading" style="text-align: center; padding: 20px;">
                 <div class="loading-wheel"></div>
-                <p style="margin-top: 10px; color: var(--muted);">Слушане на ефира за автентични Schnorr подписи...</p>
+                <p style="margin-top: 10px; color: var(--muted);">Слушане на ефира за автентични гласове...</p>
             </div>
             <div id="leaderboardContainer" class="leaderboard-container" style="display: none;"></div>
             <div id="emptyLeaderboard" style="display: none; text-align: center; padding: 40px; color: var(--muted);">
-                <h3>Колизеумът е празен</h3>
-                <p>Няма активни кандидати с над 0 гласа. Бъди първият, който ще издигне лидер от Таб 2!</p>
+                <h3>Арената е празна</h3>
+                <p>Няма активни кандидати с над 0 гласа в релеите. Отиди в Таб 2 и издигни първия!</p>
             </div>
         </div>
     </div>
@@ -147,8 +143,8 @@
         let myPubKey = null;
         let localProfileActive = false;
         
-        let virtualProfiles = new Map();
-        let liveTrustMap = new Map();
+        let virtualProfiles = new Map(); // key: event.id (Уникалното ЕГН на кандидата) -> data
+        let liveTrustMap = new Map();    // key: voter_pubkey -> target_candidate_event_id
         let relayConnections = new Map();
 
         function initializeKeypair() {
@@ -160,7 +156,7 @@
                 myPrivKey = stored;
             }
             myPubKey = NostrTools.getPublicKey(myPrivKey);
-            console.log('Браузърът генерира чист Nostr PubKey:', myPubKey);
+            console.log('Твоят сигурен Nostr PubKey за браузъра:', myPubKey);
             
             if (localStorage.getItem('legit_profile_set') === '1') {
                 localProfileActive = true;
@@ -181,7 +177,7 @@
                         };
                         ws.onmessage = (e) => handleRelayMessage(JSON.parse(e.data));
                         ws.onclose = () => { relayConnections.delete(url); setTimeout(connectToRelays, 5000); };
-                    } catch(e) { console.error("Релейна грешка при свързване:", e); }
+                    } catch(err) { console.error("Релейна грешка:", err); }
                 }
             });
         }
@@ -192,11 +188,13 @@
                 if (ev.kind === KIND_VIRTUAL_PROFILE) {
                     const name = ev.tags.find(t => t[0] === 'name')?.[1] || 'Анонимен Лидер';
                     const img = ev.tags.find(t => t[0] === 'image')?.[1] || '';
-                    virtualProfiles.set(ev.pubkey, {
-                        pubkey: ev.pubkey, name: name, image: img, rationale: ev.content, votes: 0
+                    // Тук Котвата е ev.id - уникалното събитие на раждането му!
+                    virtualProfiles.set(ev.id, {
+                        id: ev.id, pubkey: ev.pubkey, name: name, image: img, rationale: ev.content, votes: 0
                     });
                 } else if (ev.kind === KIND_TRUST) {
-                    const target = ev.tags.find(t => t[0] === 'p')?.[1];
+                    // Търсим насочен вот към кандидат чрез таг "e" (event) или "p"
+                    const target = ev.tags.find(t => t[0] === 'e' || t[0] === 'p')?.[1];
                     if (target) {
                         liveTrustMap.set(ev.pubkey, target);
                     } else {
@@ -215,7 +213,7 @@
             const name = document.getElementById('myProfileName').value.trim();
             const pic = document.getElementById('myProfilePic').value.trim();
             const about = document.getElementById('myProfileAbout').value.trim();
-            if (!name || !about) { alert('Попълнете името и био-то си!'); return; }
+            if (!name || !about) { alert('Попълнете задължителните полета!'); return; }
 
             let metadataEvent = {
                 kind: KIND_METADATA, pubkey: myPubKey, created_at: Math.floor(Date.now() / 1000),
@@ -245,7 +243,7 @@
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('loadingStatus').style.display = 'block';
 
-            // Издигане на Виртуалния Профил под криптографския печат на създателя му
+            // 1. Раждане на кандидата (Kind: 21001) под твоя криптографски печат
             let profileEvent = {
                 kind: KIND_VIRTUAL_PROFILE, pubkey: myPubKey, created_at: Math.floor(Date.now()/1000),
                 tags: [['name', name], ['image', img]], content: rationale
@@ -254,10 +252,10 @@
             profileEvent.sig = NostrTools.signEvent(profileEvent, myPrivKey);
             broadcast(profileEvent);
 
-            // Автоматично и незабавно гласуване за собствения си кандидат
+            // 2. АВТОМАТИЧНО ДЕЛЕГИРАНЕ: Твоето 1 доверие моментално се заключва към неговото Event ID
             let trustEvent = {
                 kind: KIND_TRUST, pubkey: myPubKey, created_at: Math.floor(Date.now()/1000) + 1,
-                tags: [['p', myPubKey]], content: "Първоначално улично овластяване"
+                tags: [['e', profileEvent.id]], content: "Улична инициация на лидер"
             };
             trustEvent.id = NostrTools.getEventHash(trustEvent);
             trustEvent.sig = NostrTools.signEvent(trustEvent, myPrivKey);
@@ -268,16 +266,26 @@
                 document.getElementById('submitBtn').disabled = false;
                 document.getElementById('virtualProfileForm').reset();
                 const sAlert = document.getElementById('successAlert');
-                sAlert.innerText = `✓ Желязно подписано! Кандидатът "${name}" е успешно изстрелян в Колизеума с Вашия първи глас!`;
-                sAlert.classList.add('show');
+                if (sAlert) {
+                    sAlert.innerText = `✓ Желязно подписано! Кандидатът "${name}" влезе в Колизеума с Вашия автоматичен глас!`;
+                    sAlert.classList.add('show');
+                }
                 switchTab('leaderboard');
             }, 1500);
         });
 
         function recalculateAndRender() {
+            // Нулиране на вотовете преди преброяване
             virtualProfiles.forEach(p => p.votes = 0);
-            liveTrustMap.forEach((targetPubkey) => { if (virtualProfiles.has(targetPubkey)) virtualProfiles.get(targetPubkey).votes += 1; });
+            
+            // Сумиране на живия релеен поток
+            liveTrustMap.forEach((targetCandidateId) => { 
+                if (virtualProfiles.has(targetCandidateId)) {
+                    virtualProfiles.get(targetCandidateId).votes += 1; 
+                }
+            });
 
+            // Твоето златно правило: показват се само профили с гласове > 0
             const list = Array.from(virtualProfiles.values()).filter(p => p.votes > 0).sort((a, b) => b.votes - a.votes);
             const container = document.getElementById('leaderboardContainer');
             const loading = document.getElementById('leaderboardLoading');
@@ -288,14 +296,15 @@
 
             empty.style.display = 'none';
             container.innerHTML = list.map((p, idx) => {
+                const rank = idx + 1;
                 return `
                     <div class="profile-card">
                         <div class="profile-header">
-                            <div class="rank-badge ${idx === 0 ? 'gold' : ''}">${idx + 1}</div>
+                            <div class="rank-badge ${rank === 1 ? 'gold' : ''}">${rank}</div>
                             <img src="${p.image}" class="profile-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect fill=%22%23222%22 width=%2250%22 height=%2250%22/%3E%3C/svg%3E'">
                             <div class="profile-info">
                                 <div class="profile-name">${escapeHtml(p.name)}</div>
-                                <div style="font-size:0.7rem; color:var(--muted); font-family:monospace;">ID: ${p.pubkey.slice(0,14)}...</div>
+                                <div style="font-size:0.7rem; color:var(--muted); font-family:monospace; max-width:130px; overflow:hidden; text-overflow:ellipsis;">ID: ${p.id.slice(0,14)}...</div>
                             </div>
                             <div class="trust-count">
                                 <div class="trust-count-value">${p.votes}</div>
@@ -319,9 +328,9 @@
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
             
-            document.querySelectorAll('.tab-button').forEach(b => {
-                if(b.getAttribute('onclick').includes(name)) b.classList.add('active');
-            });
+            // Защита от извикване без директен клик (програмно превключване)
+            const btn = Array.from(document.querySelectorAll('.tab-button')).find(b => b.getAttribute('onclick').includes(name));
+            if(btn) btn.classList.add('active');
         }
 
         window.addEventListener('load', () => { initializeKeypair(); connectToRelays(); });
