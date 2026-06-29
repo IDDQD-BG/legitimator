@@ -4,27 +4,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Political Legitimator – Standalone Coliseum V3</title>
     
+    <!-- Локалният файл на библиотеката -->
     <script src="./coliseum_files/nostr.bundle.js"></script>
-    
+    <!-- Three.js за 3D фона -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary: #00e5ff; /* Neon Cyan */
-            --background: transparent; /* Променен на прозрачен заради 3D фона */
-            --surface: rgba(10, 11, 22, 0.85); /* Леко прозрачен фон за кутиите */
+            --primary: #00e5ff;
+            --background: transparent;
+            --surface: rgba(10, 11, 22, 0.85);
             --foreground: #ecedee; 
             --muted: #6b7280; 
             --border: #141836;
-            --success: #39ff14; /* Neon Green */
-            --error: #ff3366; /* Neon Pink/Red */
+            --success: #39ff14;
+            --error: #ff3366;
             --warning: #f59e0b;
         }
         
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--background); color: var(--foreground); line-height: 1.6; padding: 20px; min-height: 100vh; overflow-x: hidden; }
         
-        /* Стилизиране на Canvas елемента за 3D фона */
         #canvas-bg {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
@@ -85,6 +85,7 @@
     </style>
 </head>
 <body>
+    <!-- Канвасът за 3D фона -->
     <canvas id="canvas-bg"></canvas>
 
     <div class="container">
@@ -94,13 +95,12 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('profile')">1. Моят Граждански Профил</button>
+            <button class="tab-button" onclick="switchTab('profile')">1. Моят Граждански Профил</button>
             <button class="tab-button" onclick="switchTab('launch')">2. Издигни Кандидат в Колизеума</button>
-            <button class="tab-button" onclick="switchTab('leaderboard')">3. Виртуален Лидерборд на Живо</button>
+            <button class="tab-button active" onclick="switchTab('leaderboard')">3. Виртуален Лидерборд на Живо</button>
         </div>
 
-        <div id="profile" class="tab-content active">
-            
+        <div id="profile" class="tab-content">
             <div class="form-section" id="loginSection" style="display: none;">
                 <h2>Вече имаш профил? Влез с ключа си</h2>
                 <div class="form-group">
@@ -129,26 +129,26 @@
                 <button class="btn-primary" onclick="saveAndPublishMyMetadata()">Запази и Активирай Профила</button>
             </div>
             
-            <div id="profileAlert" class="alert alert-success show">✓ Профилът е заложен локално в браузъра!</div>
+            <div id="profileAlert" class="alert alert-success">✓ Профилът е заложен локално в браузъра!</div>
             
-            <div class="form-section" id="keysSection" style="display: block; border-color: var(--warning);">
+            <div class="form-section" id="keysSection" style="display: none; border-color: var(--warning);">
                 <h2 style="border-left-color: var(--warning);">Криптографска Идентичност (ЗАПАЗИ ГИ!)</h2>
                 <p style="color: var(--muted); font-size:0.85em; margin-bottom:10px;">Това са твоите ключове за достъп. <strong>Не споделяй частния ключ с никого!</strong> Запази го на сигурно място, за да можеш да влизаш от други устройства.</p>
                 <label>Публичен Ключ (npub) - За споделяне:</label>
-                <div class="key-box" id="displayNpub">npub1ftjs5pfws3dasx8sgwrgfy6mpgmd3h2ngu30vg9nhq82g3ahhf6q57pxmf</div>
+                <div class="key-box" id="displayNpub"></div>
                 <label>Частен Ключ (nsec) - ПАЗИ В ТАЙНА:</label>
-                <div class="key-box" id="displayNsec" style="color: var(--error);">8bad5d9d15b73bb26cca890a59102477ebfbd9b71f5864f68519cc3fc3062ac0</div>
+                <div class="key-box" id="displayNsec" style="color: var(--error);"></div>
             </div>
         </div>
 
         <div id="launch" class="tab-content">
             <div class="form-section">
                 <h2>Пусни Виртуален Кандидат на Арената</h2>
-                <div class="alert alert-warning show" id="metadataAlert" style="display: none;">
+                <div class="alert alert-warning show" id="metadataAlert" style="display: block;">
                     <strong>Анти-Спам Преграда:</strong> Трябва първо да попълниш и активираш Гражданския си профил в Таб 1.
                 </div>
 
-                <form id="virtualProfileForm" style="display: block;">
+                <form id="virtualProfileForm" style="display: none;">
                     <div class="form-group">
                         <label>Име на Кандидата *</label>
                         <input type="text" id="candidateName" placeholder="Напр. Адвокат Петър Петров" required="">
@@ -172,7 +172,7 @@
             <div id="successAlert" class="alert alert-success"></div>
         </div>
 
-        <div id="leaderboard" class="tab-content">
+        <div id="leaderboard" class="tab-content active">
             <div style="margin-bottom: 20px;">
                 <h2>Текущо класиране на Виртуалните Делегати</h2>
                 <p style="color: var(--muted); font-size: 0.85em;">Свободно пренареждане на силите в реално време на база акумулираните живи гласове.</p>
@@ -189,8 +189,8 @@
         </div>
     </div>
 
+    <!-- Nostr скрипт -->
     <script>
-        // Инициализация на NostrTools
         const nt = window.NostrTools;
 
         const RELAYS = ['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol', 'wss://relay.snort.social'];
@@ -201,19 +201,56 @@
         let userKeypair = null;
         let localProfileActive = false;
         
-        let virtualProfiles = new Map(); // key: pubkey -> profile data
-        let liveTrustMap = new Map();    // key: voter_pubkey -> { target, time }
+        let virtualProfiles = new Map();
+        let liveTrustMap = new Map();
         let relayConnections = new Map();
 
-        // Помощни функции за NIP-19 (npub/nsec)
+        // ------------------------------------------------------------------
+        // УНИВЕРСАЛЕН МОСТ (ЗА СЪВМЕСТИМОСТ МЕЖДУ NOSTR-TOOLS V1 И V2)
+        // ------------------------------------------------------------------
+        function bytesToHex(bytes) {
+            return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
         function hexToBytes(hex) {
             let bytes = new Uint8Array(hex.length / 2);
             for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
             return bytes;
         }
-        function encodeBech32(prefix, hex) {
-            try { return nt.nip19.encode(prefix, hex); } catch (e) { return hex; } // Fallback to hex if nip19 fails
+
+        function generateSecretKeyHex() {
+            if (nt.generateSecretKey) {
+                return bytesToHex(nt.generateSecretKey()); // v2
+            } else {
+                return nt.generatePrivateKey(); // v1
+            }
         }
+
+        function getPublicKeyHex(skHex) {
+            if (nt.getPublicKey.length === 1) { 
+               try { return nt.getPublicKey(hexToBytes(skHex)); } // v2
+               catch(e) { return nt.getPublicKey(skHex); } // v1 fallback
+            }
+            return nt.getPublicKey(skHex);
+        }
+
+        function createAndSign(kind, tags, content, skHex) {
+            const pk = getPublicKeyHex(skHex);
+            let event = {
+                kind: kind,
+                pubkey: pk,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: tags,
+                content: content
+            };
+            if (nt.finalizeEvent) {
+                return nt.finalizeEvent(event, hexToBytes(skHex)); // v2
+            } else {
+                event.id = nt.getEventHash(event); // v1
+                event.sig = nt.signEvent(event, skHex);
+                return event;
+            }
+        }
+        // ------------------------------------------------------------------
 
         function displayKeys() {
             if (!userKeypair) return;
@@ -223,9 +260,13 @@
             let nsec = userKeypair.secretKey;
             
             try {
-                npub = nt.nip19.npubEncode(userKeypair.publicKey);
-                nsec = nt.nip19.nsecEncode(hexToBytes(userKeypair.secretKey));
-            } catch(e) {} // Ако библиотеката е стара, показваме Hex
+                if (nt.nip19 && nt.nip19.npubEncode) {
+                    npub = nt.nip19.npubEncode(userKeypair.publicKey);
+                    // v2 takes Uint8Array, v1 takes hex string
+                    try { nsec = nt.nip19.nsecEncode(hexToBytes(userKeypair.secretKey)); }
+                    catch(e) { nsec = nt.nip19.nsecEncode(userKeypair.secretKey); }
+                }
+            } catch(e) {}
             
             document.getElementById('displayNpub').innerText = npub;
             document.getElementById('displayNsec').innerText = nsec;
@@ -234,9 +275,9 @@
         function initializeKeypair() {
             let stored = localStorage.getItem('legit_keypair_schnorr_v2');
             if (!stored) {
-                let sk = nt.generatePrivateKey(); 
-                let pk = nt.getPublicKey(sk);     
-                userKeypair = { secretKey: sk, publicKey: pk };
+                let skHex = generateSecretKeyHex();
+                let pkHex = getPublicKeyHex(skHex);
+                userKeypair = { secretKey: skHex, publicKey: pkHex };
                 localStorage.setItem('legit_keypair_schnorr_v2', JSON.stringify(userKeypair));
             } else {
                 userKeypair = JSON.parse(stored);
@@ -247,6 +288,8 @@
             let metaCheck = localStorage.getItem('legit_profile_set_v2');
             if (metaCheck === '1') {
                 unlockApp();
+            } else {
+                document.getElementById('loginSection').style.display = 'block';
             }
         }
 
@@ -274,24 +317,24 @@
                 if (input.startsWith('nsec')) {
                     let decoded = nt.nip19.decode(input);
                     if (decoded.type === 'nsec') {
-                        // Convert Uint8Array to Hex String
-                        hexPrivateKey = Array.from(decoded.data).map(b => b.toString(16).padStart(2, '0')).join('');
+                        if (decoded.data instanceof Uint8Array) {
+                            hexPrivateKey = bytesToHex(decoded.data); // v2
+                        } else {
+                            hexPrivateKey = decoded.data; // v1
+                        }
                     } else {
                         throw new Error("Невалиден nsec ключ");
                     }
                 } else {
-                    // Assume it's already Hex
                     if (input.length !== 64) throw new Error("Hex ключът трябва да е 64 символа");
                     hexPrivateKey = input;
                 }
 
-                let pubKey = nt.getPublicKey(hexPrivateKey);
+                let pubKey = getPublicKeyHex(hexPrivateKey);
                 userKeypair = { secretKey: hexPrivateKey, publicKey: pubKey };
                 localStorage.setItem('legit_keypair_schnorr_v2', JSON.stringify(userKeypair));
                 
                 displayKeys();
-                
-                // Проверяваме дали този ключ вече има профил в мрежата
                 localStorage.setItem('legit_profile_set_v2', '1');
                 unlockApp();
                 switchTab('leaderboard');
@@ -300,19 +343,6 @@
                 errAlert.innerText = 'Невалиден ключ: ' + error.message;
                 errAlert.classList.add('show');
             }
-        }
-
-        function createAndSignEvent(kind, tags, content) {
-            let event = {
-                kind: kind,
-                pubkey: userKeypair.publicKey,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: tags,
-                content: content
-            };
-            event.id = nt.getEventHash(event); 
-            event.sig = nt.signEvent(event, userKeypair.secretKey); 
-            return event;
         }
 
         function connectToRelays() {
@@ -341,7 +371,6 @@
                         });
                     }
                 } else if (ev.kind === KIND_TRUST) {
-                    // Намираме p-tag, ако има такъв. Ако няма, значи е ВЕТО (оттегляне)
                     const target = ev.tags.find(t => t[0] === 'p')?.[1];
                     const currentTrust = liveTrustMap.get(ev.pubkey);
                     
@@ -349,7 +378,6 @@
                         if (target) {
                             liveTrustMap.set(ev.pubkey, { target: target, time: ev.created_at });
                         } else {
-                            // Empty Trust Event = ВЕТО / Оттегляне на гласа
                             liveTrustMap.set(ev.pubkey, { target: null, time: ev.created_at });
                         }
                     }
@@ -370,7 +398,7 @@
             const about = document.getElementById('myProfileAbout').value.trim();
             if (!name || !about) { alert('Попълнете името и био-то си!'); return; }
 
-            const metadataEvent = createAndSignEvent(KIND_METADATA, [], JSON.stringify({ name: name, picture: pic, about: about }));
+            const metadataEvent = createAndSign(KIND_METADATA, [], JSON.stringify({ name: name, picture: pic, about: about }), userKeypair.secretKey);
             broadcast(metadataEvent);
             
             localStorage.setItem('legit_profile_set_v2', '1');
@@ -389,37 +417,44 @@
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('loadingStatus').style.display = 'block';
 
-            let virtualSk = nt.generatePrivateKey();
-            let virtualPk = nt.getPublicKey(virtualSk);
-            
-            let correctProfileEvent = {
-                kind: KIND_VIRTUAL_PROFILE,
-                pubkey: virtualPk,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [['name', name], ['image', img], ['creator', userKeypair.publicKey]],
-                content: rationale
-            };
-            correctProfileEvent.id = nt.getEventHash(correctProfileEvent);
-            correctProfileEvent.sig = nt.signEvent(correctProfileEvent, virtualSk);
-            broadcast(correctProfileEvent);
+            try {
+                let virtualSkHex = generateSecretKeyHex();
+                let virtualPkHex = getPublicKeyHex(virtualSkHex);
+                
+                let correctProfileEvent = createAndSign(
+                    KIND_VIRTUAL_PROFILE, 
+                    [['name', name], ['image', img], ['creator', userKeypair.publicKey]], 
+                    rationale, 
+                    virtualSkHex
+                );
+                broadcast(correctProfileEvent);
 
-            // Автоматично гласуване за създадения профил
-            const trustEvent = createAndSignEvent(KIND_TRUST, [['p', virtualPk]], "Първоначално улично овластяване");
-            broadcast(trustEvent);
-            liveTrustMap.set(userKeypair.publicKey, { target: virtualPk, time: trustEvent.created_at });
+                const trustEvent = createAndSign(
+                    KIND_TRUST, 
+                    [['p', virtualPkHex]], 
+                    "Първоначално улично овластяване",
+                    userKeypair.secretKey
+                );
+                broadcast(trustEvent);
+                liveTrustMap.set(userKeypair.publicKey, { target: virtualPkHex, time: trustEvent.created_at });
 
-            setTimeout(() => {
+                setTimeout(() => {
+                    document.getElementById('loadingStatus').style.display = 'none';
+                    document.getElementById('submitBtn').disabled = false;
+                    document.getElementById('virtualProfileForm').reset();
+                    const sAlert = document.getElementById('successAlert');
+                    sAlert.innerText = `✓ Кандидатът "${name}" е успешно пуснат в Колизеума!`;
+                    sAlert.classList.add('show');
+                    switchTab('leaderboard');
+                }, 2000);
+            } catch (err) {
+                console.error(err);
+                alert("Възникна грешка при създаването. Моля, обновете страницата.");
                 document.getElementById('loadingStatus').style.display = 'none';
                 document.getElementById('submitBtn').disabled = false;
-                document.getElementById('virtualProfileForm').reset();
-                const sAlert = document.getElementById('successAlert');
-                sAlert.innerText = `✓ Кандидатът "${name}" е успешно пуснат в Колизеума!`;
-                sAlert.classList.add('show');
-                switchTab('leaderboard');
-            }, 2000);
+            }
         });
 
-        // Функция за ДЕЛЕГИРАНЕ
         function delegateTrust(targetPubkey, targetName) {
             if (!localProfileActive) {
                 alert('Трябва да активирате Гражданския си профил от ТАБ 1, преди да гласувате!');
@@ -428,21 +463,17 @@
             }
 
             if (confirm(`Ще делегирате вашия глас на:\n\n${targetName}\n\nАко вече сте гласували за друг, старият ви вот ще бъде преместен тук. Съгласни ли сте?`)) {
-                const trustEvent = createAndSignEvent(KIND_TRUST, [['p', targetPubkey]], "Делегиране на доверие от Колизеума");
+                const trustEvent = createAndSign(KIND_TRUST, [['p', targetPubkey]], "Делегиране на доверие от Колизеума", userKeypair.secretKey);
                 broadcast(trustEvent);
-                
                 liveTrustMap.set(userKeypair.publicKey, { target: targetPubkey, time: trustEvent.created_at });
                 recalculateAndRender();
             }
         }
 
-        // Функция за ОТТЕГЛЯНЕ НА ДОВЕРИЕ (ВЕТО)
         function revokeTrust(targetName) {
             if (confirm(`Сигурни ли сте, че искате да оттеглите доверието си от:\n\n${targetName}?\n\nГласът ви ще бъде нулиран.`)) {
-                // Празно Trust събитие (без p tag) означава премахване на гласа
-                const revokeEvent = createAndSignEvent(KIND_TRUST, [], "Оттегляне на доверие (ВЕТО)");
+                const revokeEvent = createAndSign(KIND_TRUST, [], "Оттегляне на доверие (ВЕТО)", userKeypair.secretKey);
                 broadcast(revokeEvent);
-                
                 liveTrustMap.set(userKeypair.publicKey, { target: null, time: revokeEvent.created_at });
                 recalculateAndRender();
             }
@@ -451,7 +482,6 @@
         function recalculateAndRender() {
             virtualProfiles.forEach(p => p.votes = 0);
             
-            // Сумираме само активните гласове (където target не е null)
             liveTrustMap.forEach((voteData) => {
                 if (voteData.target && virtualProfiles.has(voteData.target)) {
                     virtualProfiles.get(voteData.target).votes += 1;
@@ -517,7 +547,8 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(name).classList.add('active');
-            event.target.classList.add('active');
+            const btn = document.querySelector(`button[onclick="switchTab('${name}')"]`);
+            if (btn) btn.classList.add('active');
         }
 
         window.addEventListener('load', () => {
@@ -526,6 +557,7 @@
         });
     </script>
 
+    <!-- Скриптът за 3D фона -->
     <script>
     const canvas = document.getElementById('canvas-bg');
     const scene = new THREE.Scene();
