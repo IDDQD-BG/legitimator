@@ -36,7 +36,13 @@
         /* --- СИМЕТРИЧЕН ХЕДЪР --- */
         header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
         
-        .header-top { display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 10px; }
+        .header-top {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
         
         .icon-btn {
             background: rgba(0, 229, 255, 0.1);
@@ -55,7 +61,9 @@
         }
         
         .icon-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 20px var(--primary); transform: scale(1.1); }
+        
         .logo-icon { font-size: 3.5em; text-shadow: 0 0 20px rgba(0, 229, 255, 0.5); line-height: 1; }
+        
         header h1 { font-size: clamp(1.4em, 5vw, 2.5em); color: #fff; letter-spacing: 4px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); line-height: 1.2; margin-bottom: 5px; }
         .motto-box { font-size: clamp(0.9em, 3.5vw, 1.3em); color: var(--primary); font-weight: 900; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); margin-bottom: 10px; letter-spacing: 2px; word-break: keep-all; }
         header p { color: var(--muted); font-size: clamp(0.85em, 3vw, 1em); }
@@ -113,6 +121,9 @@
         .profile-avatar { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; background: #222; border: 1px solid var(--border); }
         .profile-info { flex: 1; min-width: 0; }
         .profile-name { font-size: 1.1em; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; }
+        .pubkey-copy { font-size:0.75rem; color:var(--primary); font-family:monospace; cursor:pointer; background: rgba(0,229,255,0.1); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--primary); display: inline-block; margin-top: 2px;}
+        .pubkey-copy:hover { background: var(--primary); color: #000; }
+        
         .trust-count { text-align: right; }
         .trust-count-value { font-size: 1.6em; font-weight: 900; color: var(--primary); text-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
         .rationale-box { background: rgba(0,0,0,0.6); padding: 10px; border-radius: 4px; font-size: 0.85em; color: #ccc; border: 1px solid #1a1a2e; }
@@ -233,12 +244,10 @@
 
         <div id="launch" class="tab-content">
             
-            <!-- ДАШБОРД НА ДОВЕРИЕТО -->
             <div id="myCurrentDelegateDashboard" class="dashboard-panel" style="display: none;">
                 <h3>📊 Моят Дашборд на Доверието</h3>
                 <p style="font-size: 0.9em; color: #ccc;">Ти си делегирал правата си на:</p>
                 <div id="myDelegateInfo" style="font-size: 1.2em; font-weight: bold; color: #fff; margin: 10px 0; display: flex; align-items: center; gap: 10px;">
-                    <!-- Тук ще се зарежда делегатът -->
                 </div>
                 <p style="font-size: 0.8em; color: var(--muted);">* В тази секция в бъдеще ще проследяваме дървото на мета-доверието (Liquid Democracy).</p>
                 <button class="btn-revoke" onclick="revokeMyTrust()" style="width: auto; margin-top: 10px; padding: 8px 15px; font-size: 0.8em;">❌ ОТТЕГЛИ ДОВЕРИЕТО</button>
@@ -301,10 +310,18 @@
         </div>
     </div>
 
-    <!-- Модал логика -->
+    <!-- Модал логика и копиране -->
     <script>
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        
+        function copyPubkey(pubkey) {
+            navigator.clipboard.writeText(pubkey).then(() => {
+                alert('Публичният ключ е копиран:\n' + pubkey);
+            }).catch(err => {
+                console.error('Неуспешно копиране: ', err);
+            });
+        }
     </script>
 
     <!-- Nostr скрипт -->
@@ -312,10 +329,22 @@
         const nt = window.NostrTools;
 
         const RELAYS = ['wss://relay.damus.io', 'wss://relay.nostr.band', 'wss://nos.lol', 'wss://relay.snort.social'];
+        
+        // НОВИ КОДОВЕ ЗА ЗАМЕНЯЕМИ СЪБИТИЯ (REPLACEABLE), КОИТО РЕЛЕТАТА ПАЗЯТ!
         const KIND_METADATA = 0;
-        const KIND_TRUST = 21000;
-        const KIND_VIRTUAL_PROFILE = 21001;
-        const KIND_COMMENT = 21002; 
+        const KIND_TRUST = 12100;         // Преди беше 21000
+        const KIND_VIRTUAL_PROFILE = 12101; // Преди беше 21001
+        const KIND_COMMENT = 12102;       // Преди беше 21002
+
+        const GENESIS_DELEGATES = [
+            // {
+            //     pubkey: "ТУК_СЛАГАШ_64_СИМВОЛНИЯ_КЛЮЧ",
+            //     name: "адв. Яничка Методиева",
+            //     image: "https://url-към-снимката",
+            //     rationale: "Днес България повече от всякога се нуждае...",
+            //     votes: 0
+            // }
+        ];
 
         let userKeypair = null;
         let localProfileActive = false;
@@ -326,9 +355,6 @@
         let relayConnections = new Map();
         let openCommentSections = new Set(); 
 
-        // ------------------------------------------------------------------
-        // КАЧВАНЕ НА СНИМКА (С РЕЗЕРВЕН ВАРИАНТ)
-        // ------------------------------------------------------------------
         async function uploadImageToNostr(input) {
             const file = input.files[0];
             if (!file) return;
@@ -377,7 +403,6 @@
             }
         }
 
-        // Универсален мост
         function bytesToHex(bytes) {
             return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
         }
@@ -466,7 +491,6 @@
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('btnSaveProfile').innerText = "ОБНОВИ ПРОФИЛА";
 
-            // Зареждане на локалните данни обратно в инпутите
             let savedProfile = localStorage.getItem('legit_profile_data');
             if (savedProfile) {
                 try {
@@ -581,7 +605,6 @@
             const about = document.getElementById('myProfileAbout').value.trim();
             if (!name || !about) { alert('Попълнете името и био-то си!'); return; }
 
-            // Запазваме локално, за да ги възстановим при рефреш
             localStorage.setItem('legit_profile_data', JSON.stringify({ name: name, picture: pic, about: about }));
 
             const metadataEvent = createAndSign(KIND_METADATA, [], JSON.stringify({ name: name, picture: pic, about: about }), userKeypair.secretKey);
@@ -668,7 +691,6 @@
             }
         }
 
-        // Функция за бутона в Дашборда
         window.revokeMyTrust = function() {
             const myPubkey = userKeypair ? userKeypair.publicKey : null;
             const myVoteData = liveTrustMap.get(myPubkey);
@@ -723,9 +745,6 @@
                 }
             });
 
-            // ----------------------------------------------------
-            // ОБНОВЯВАНЕ НА ДАШБОРДА (ТАБ 2)
-            // ----------------------------------------------------
             const myPubkey = userKeypair ? userKeypair.publicKey : null;
             const myVoteData = liveTrustMap.get(myPubkey);
             const myDelegatePubkey = myVoteData ? myVoteData.target : null;
@@ -736,15 +755,13 @@
             if (myDelegatePubkey && virtualProfiles.has(myDelegatePubkey)) {
                 dashboard.style.display = 'block';
                 const delegate = virtualProfiles.get(myDelegatePubkey);
-                delegateInfo.innerHTML = `<img src="${escapeHtml(delegate.image)}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;"> <span>${escapeHtml(delegate.name)}</span>`;
+                delegateInfo.innerHTML = `<img src="${escapeHtml(delegate.image)}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #00e5ff;"> <span style="font-size:1.1em;">${escapeHtml(delegate.name)}</span>`;
             } else if (myDelegatePubkey) {
-                // Имаме глас, но профилът все още се зарежда от мрежата
                 dashboard.style.display = 'block';
-                delegateInfo.innerHTML = `<span style="font-family:monospace;">ID: ${myDelegatePubkey.slice(0, 12)}...</span> (Зареждане...)`;
+                delegateInfo.innerHTML = `<span style="font-family:monospace; color:var(--muted);">ID: ${myDelegatePubkey.slice(0, 12)}...</span> <span style="color:var(--primary); font-size:0.8em;">(Зареждане от релетата...)</span>`;
             } else {
                 dashboard.style.display = 'none';
             }
-            // ----------------------------------------------------
 
             const list = Array.from(virtualProfiles.values())
                 .sort((a, b) => b.votes - a.votes);
@@ -792,7 +809,7 @@
                             <img src="${p.image}" class="profile-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect fill=%22%23222%22 width=%2250%22 height=%2250%22/%3E%3C/svg%3E'">
                             <div class="profile-info">
                                 <div class="profile-name">${escapeHtml(p.name)}</div>
-                                <div style="font-size:0.75rem; color:var(--muted); font-family:monospace;">ID: ${p.pubkey.slice(0,12)}...</div>
+                                <div><span class="pubkey-copy" onclick="copyPubkey('${p.pubkey}')" title="Кликни за копиране на целия ключ">ID: ${p.pubkey.slice(0,12)}... 📋</span></div>
                             </div>
                             <div class="trust-count">
                                 <div class="trust-count-value">${p.votes}</div>
@@ -838,8 +855,11 @@
         }
 
         window.addEventListener('load', () => {
+            GENESIS_DELEGATES.forEach(del => virtualProfiles.set(del.pubkey, del));
+            
             initializeKeypair();
             connectToRelays();
+            recalculateAndRender();
         });
     </script>
 
