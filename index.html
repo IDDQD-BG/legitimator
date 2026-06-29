@@ -4,9 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Political Legitimator – Standalone Coliseum V3</title>
     
-    <!-- Локалният файл на библиотеката -->
     <script src="./coliseum_files/nostr.bundle.js"></script>
-    <!-- Three.js за 3D фона -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
@@ -35,6 +33,20 @@
         header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
         header h1 { font-size: 2.2em; color: var(--primary); letter-spacing: 1px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
         header p { color: var(--muted); font-size: 1em; margin-top: 5px; }
+        
+        .test-notice {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
         .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid var(--border); }
         .tab-button { padding: 12px 24px; border: none; background: none; cursor: pointer; font-size: 1em; color: var(--muted); border-bottom: 3px solid transparent; transition: 0.3s; font-weight: bold; }
         .tab-button.active { color: var(--primary); border-bottom-color: var(--primary); text-shadow: 0 0 8px rgba(0, 229, 255, 0.3); }
@@ -82,16 +94,29 @@
         
         .loading-wheel { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Стилове за коментарите */
+        .comment-section { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; }
+        .comment-toggle { background: transparent; border: none; color: var(--primary); cursor: pointer; font-size: 0.85em; width: 100%; text-align: left; padding: 5px 0; text-transform: none; letter-spacing: normal; }
+        .comment-toggle:hover { text-decoration: underline; box-shadow: none; }
+        .comment-list { max-height: 180px; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
+        .comment-item { background: rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 4px; margin-bottom: 6px; font-size: 0.85em; border-left: 2px solid var(--primary); color: #ddd; word-break: break-word; }
+        .comment-input-area { display: flex; gap: 5px; }
+        .comment-input-area input { padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: #000; color: #fff; flex: 1; font-size: 0.8em; outline: none; }
+        .comment-input-area input:focus { border-color: var(--primary); }
+        .comment-input-area button { padding: 8px 15px; background: var(--primary); color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.8em; }
     </style>
 </head>
 <body>
-    <!-- Канвасът за 3D фона -->
     <canvas id="canvas-bg"></canvas>
 
     <div class="container">
         <header>
-            <h1>🏛️ POLITICAL COLISEUM (NEON V3)</h1>
+            <h1>🏛️ POLITICAL COLISEUM (С един е ние, то прави силата!)</h1>
             <p>Платформа за Политическа Легитимация през Отворения Ностър Протокол</p>
+            <div class="test-notice">
+                ⚠️ Внимание: Това е само тестова версия на Колизеума, но натрупаните тук доверия и делегати ще могат да мигрират към официалното приложение!
+            </div>
         </header>
 
         <div class="tabs">
@@ -189,7 +214,6 @@
         </div>
     </div>
 
-    <!-- Nostr скрипт -->
     <script>
         const nt = window.NostrTools;
 
@@ -197,17 +221,18 @@
         const KIND_METADATA = 0;
         const KIND_TRUST = 21000;
         const KIND_VIRTUAL_PROFILE = 21001;
+        const KIND_COMMENT = 21002; // Нов KIND за анонимни коментари
 
         let userKeypair = null;
         let localProfileActive = false;
         
         let virtualProfiles = new Map();
         let liveTrustMap = new Map();
+        let commentsMap = new Map(); // target_pubkey -> Map(event_id -> {content, time})
         let relayConnections = new Map();
+        let openCommentSections = new Set(); // Записва кои менюта с коментари са отворени
 
-        // ------------------------------------------------------------------
-        // УНИВЕРСАЛЕН МОСТ (ЗА СЪВМЕСТИМОСТ МЕЖДУ NOSTR-TOOLS V1 И V2)
-        // ------------------------------------------------------------------
+        // Универсален мост
         function bytesToHex(bytes) {
             return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
         }
@@ -219,16 +244,16 @@
 
         function generateSecretKeyHex() {
             if (nt.generateSecretKey) {
-                return bytesToHex(nt.generateSecretKey()); // v2
+                return bytesToHex(nt.generateSecretKey()); 
             } else {
-                return nt.generatePrivateKey(); // v1
+                return nt.generatePrivateKey(); 
             }
         }
 
         function getPublicKeyHex(skHex) {
             if (nt.getPublicKey.length === 1) { 
-               try { return nt.getPublicKey(hexToBytes(skHex)); } // v2
-               catch(e) { return nt.getPublicKey(skHex); } // v1 fallback
+               try { return nt.getPublicKey(hexToBytes(skHex)); } 
+               catch(e) { return nt.getPublicKey(skHex); } 
             }
             return nt.getPublicKey(skHex);
         }
@@ -243,14 +268,13 @@
                 content: content
             };
             if (nt.finalizeEvent) {
-                return nt.finalizeEvent(event, hexToBytes(skHex)); // v2
+                return nt.finalizeEvent(event, hexToBytes(skHex)); 
             } else {
-                event.id = nt.getEventHash(event); // v1
+                event.id = nt.getEventHash(event); 
                 event.sig = nt.signEvent(event, skHex);
                 return event;
             }
         }
-        // ------------------------------------------------------------------
 
         function displayKeys() {
             if (!userKeypair) return;
@@ -262,7 +286,6 @@
             try {
                 if (nt.nip19 && nt.nip19.npubEncode) {
                     npub = nt.nip19.npubEncode(userKeypair.publicKey);
-                    // v2 takes Uint8Array, v1 takes hex string
                     try { nsec = nt.nip19.nsecEncode(hexToBytes(userKeypair.secretKey)); }
                     catch(e) { nsec = nt.nip19.nsecEncode(userKeypair.secretKey); }
                 }
@@ -318,9 +341,9 @@
                     let decoded = nt.nip19.decode(input);
                     if (decoded.type === 'nsec') {
                         if (decoded.data instanceof Uint8Array) {
-                            hexPrivateKey = bytesToHex(decoded.data); // v2
+                            hexPrivateKey = bytesToHex(decoded.data); 
                         } else {
-                            hexPrivateKey = decoded.data; // v1
+                            hexPrivateKey = decoded.data; 
                         }
                     } else {
                         throw new Error("Невалиден nsec ключ");
@@ -351,7 +374,8 @@
                     const ws = new WebSocket(url);
                     ws.onopen = () => {
                         relayConnections.set(url, ws);
-                        ws.send(JSON.stringify(['REQ', 'sub_coliseum', { kinds: [KIND_TRUST, KIND_VIRTUAL_PROFILE], limit: 1000 }]));
+                        // Добавяме KIND_COMMENT в слушането
+                        ws.send(JSON.stringify(['REQ', 'sub_coliseum', { kinds: [KIND_TRUST, KIND_VIRTUAL_PROFILE, KIND_COMMENT], limit: 2000 }]));
                     };
                     ws.onmessage = (e) => handleRelayMessage(JSON.parse(e.data));
                     ws.onclose = () => { relayConnections.delete(url); setTimeout(connectToRelays, 5000); };
@@ -380,6 +404,12 @@
                         } else {
                             liveTrustMap.set(ev.pubkey, { target: null, time: ev.created_at });
                         }
+                    }
+                } else if (ev.kind === KIND_COMMENT) {
+                    const target = ev.tags.find(t => t[0] === 'p')?.[1];
+                    if (target) {
+                        if (!commentsMap.has(target)) commentsMap.set(target, new Map());
+                        commentsMap.get(target).set(ev.id, { content: ev.content, time: ev.created_at });
                     }
                 }
                 recalculateAndRender();
@@ -449,7 +479,7 @@
                 }, 2000);
             } catch (err) {
                 console.error(err);
-                alert("Възникна грешка при създаването. Моля, обновете страницата.");
+                alert("Възникна грешка. Възможно е релетата да Ви ограничават временно. Изчакайте малко и опитайте пак.");
                 document.getElementById('loadingStatus').style.display = 'none';
                 document.getElementById('submitBtn').disabled = false;
             }
@@ -461,7 +491,6 @@
                 switchTab('profile');
                 return;
             }
-
             if (confirm(`Ще делегирате вашия глас на:\n\n${targetName}\n\nАко вече сте гласували за друг, старият ви вот ще бъде преместен тук. Съгласни ли сте?`)) {
                 const trustEvent = createAndSign(KIND_TRUST, [['p', targetPubkey]], "Делегиране на доверие от Колизеума", userKeypair.secretKey);
                 broadcast(trustEvent);
@@ -478,6 +507,39 @@
                 recalculateAndRender();
             }
         }
+
+        window.toggleComments = function(pubkey) {
+            if (openCommentSections.has(pubkey)) {
+                openCommentSections.delete(pubkey);
+            } else {
+                openCommentSections.add(pubkey);
+            }
+            recalculateAndRender();
+        };
+
+        window.sendAnonymousComment = function(targetPubkey) {
+            const inputEl = document.getElementById(`input-${targetPubkey}`);
+            const content = inputEl.value.trim();
+            if (!content) return;
+
+            // Генерираме чисто нов случаен ключ за абсолютна анонимност
+            let anonSkHex = generateSecretKeyHex();
+            
+            let commentEvent = createAndSign(
+                KIND_COMMENT,
+                [['p', targetPubkey]],
+                content,
+                anonSkHex
+            );
+            
+            broadcast(commentEvent);
+            
+            if (!commentsMap.has(targetPubkey)) commentsMap.set(targetPubkey, new Map());
+            commentsMap.get(targetPubkey).set(commentEvent.id, { content: content, time: commentEvent.created_at });
+            
+            openCommentSections.add(targetPubkey); // Уверяваме се, че остават отворени
+            recalculateAndRender();
+        };
 
         function recalculateAndRender() {
             virtualProfiles.forEach(p => p.votes = 0);
@@ -515,6 +577,21 @@
                     buttonHTML = `<button class="btn-vote" onclick="delegateTrust('${p.pubkey}', '${escapeHtml(p.name).replace(/'/g, "\\'")}')">🤝 ДЕЛЕГИРАЙ ДОВЕРИЕ</button>`;
                 }
 
+                // Логика за коментари
+                let commentsArr = [];
+                if (commentsMap.has(p.pubkey)) {
+                    commentsArr = Array.from(commentsMap.get(p.pubkey).values()).sort((a,b) => a.time - b.time);
+                }
+                const isCommentsOpen = openCommentSections.has(p.pubkey);
+                
+                let commentsHTML = commentsArr.map(c => `
+                    <div class="comment-item">${escapeHtml(c.content)}</div>
+                `).join('');
+
+                if (commentsArr.length === 0) {
+                    commentsHTML = `<div style="color:var(--muted); font-size:0.8em; margin-bottom:10px;">Няма коментари. Бъди първият!</div>`;
+                }
+
                 return `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -535,6 +612,21 @@
                         </div>
                         
                         ${buttonHTML}
+
+                        <div class="comment-section">
+                            <button class="comment-toggle" onclick="toggleComments('${p.pubkey}')">
+                                💬 Анонимни коментари (${commentsArr.length}) ${isCommentsOpen ? '▲' : '▼'}
+                            </button>
+                            <div style="display: ${isCommentsOpen ? 'block' : 'none'}; margin-top: 10px;">
+                                <div class="comment-list">
+                                    ${commentsHTML}
+                                </div>
+                                <div class="comment-input-area">
+                                    <input type="text" id="input-${p.pubkey}" placeholder="Напиши анонимно...">
+                                    <button onclick="sendAnonymousComment('${p.pubkey}')">Прати</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -557,7 +649,6 @@
         });
     </script>
 
-    <!-- Скриптът за 3D фона -->
     <script>
     const canvas = document.getElementById('canvas-bg');
     const scene = new THREE.Scene();
